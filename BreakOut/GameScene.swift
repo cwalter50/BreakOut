@@ -9,81 +9,66 @@
 import SpriteKit
 import GameplayKit
 
+// these will prevent spelling errors down the road, because we use them a lot
+let BallCategoryName = "ball"
+let PaddleCategoryName = "paddle"
+let BlockCategoryName = "block"
+
+var isFingerOnPaddle = false
+
+
 class GameScene: SKScene {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
-    
+    // this is like viewDidLoad in a VC
     override func didMove(to view: SKView) {
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+        // set the border of the world to the frame.
+        let borderBody = SKPhysicsBody(edgeLoopFrom: self.frame)
+        borderBody.friction = 0.0
+        self.physicsBody = borderBody
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        // take gravity out of physics world
+        physicsWorld.gravity = CGVector(dx: 0.0, dy: 0.0)
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
-            
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
-    }
-    
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
+        let ball = childNode(withName: BallCategoryName) as! SKSpriteNode
+        ball.physicsBody?.applyImpulse(CGVector(dx: 2.0, dy: -2.0))
+        
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
+        let touch = touches.first
+        // self is a SKScene, so we can use self there
+        let touchLocation = touch!.location(in: self)
+        
+        if let body = physicsWorld.body(at: touchLocation) {
+            if body.node?.name == PaddleCategoryName {
+                print("Began touch on Paddle")
+                isFingerOnPaddle = true
+            }
         }
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+        if isFingerOnPaddle {
+            let touch = touches.first
+            let touchLocation = touch!.location(in: self)
+            let previousLocation = touch!.previousLocation(in: self)
+            
+            let myPaddle = childNode(withName: PaddleCategoryName) as! SKSpriteNode
+            // not quite sure why this math is here in the next 3 lines.  Figure it OUT!!!
+            var paddlex = myPaddle.position.x + (touchLocation.x - previousLocation.x)
+            paddlex = max(paddlex, myPaddle.size.width/2.0)
+            paddlex = min(paddlex, size.width - myPaddle.size.width/2.0)
+            
+            myPaddle.position = CGPoint(x: paddlex, y: myPaddle.position.y)
+            
+            
+        }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
+        
     }
     
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
-    }
 }
