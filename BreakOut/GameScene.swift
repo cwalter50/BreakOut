@@ -56,11 +56,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         borderBody.categoryBitMask = BorderCategory
         
         
-        // this will help whenever ball contacts bottom.  Add SKPhysicsContactDelegate to get access to methods
-        ball.physicsBody!.contactTestBitMask = BottomCategory
-        physicsWorld.contactDelegate = self // this will allow us to call didBegin(contact...)
+        // this will help whenever ball contacts bottom or Block.  Add SKPhysicsContactDelegate to get access to methods
+        ball.physicsBody!.contactTestBitMask = BottomCategory | BlockCategory
+        // this will allow us to call didBegin(contact...)
+        physicsWorld.contactDelegate = self
         
-        // create blocks programmaticcally
+        createBlocks()
+        
+    }
+    
+    func breakBlock(node: SKNode) {
+        node.removeFromParent()
+    }
+    
+    func createBlocks() {
+        // create blocks programmaticcally so that you can add blocks and difficulty
         let numberOfBlocks = 8
         let blockWidth = SKSpriteNode(imageNamed: "block").size.width
         let totalBlockWidth = blockWidth * CGFloat(numberOfBlocks)
@@ -80,9 +90,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             block.zPosition = 1
             addChild(block)
         }
-        
-        
-        
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -100,7 +107,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == BottomCategory {
-            print("first contact made with bottom.")
+            print("ball hit bottom")
+        }
+        
+        if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == BlockCategory {
+            print("ball Hit Block")
+            breakBlock(node: secondBody.node!)
         }
         
     }
